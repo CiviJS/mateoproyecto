@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Galaxia de Amor - Mi Morena Preciosa</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #020208;
+      font-family: 'Segoe UI', Arial, sans-serif;
+    }
+    #canvas-container {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+      cursor: grab;
+    }
+    #canvas-container:active {
+      cursor: grabbing;
+    }
+    .main-title {
+      position: absolute;
+      top: 25px;
+      width: 100%;
+      text-align: center;
+      color: #ffd700;
+      font-size: 1.8rem;
+      font-weight: bold;
+      text-shadow: 0 0 15px rgba(255, 215, 0, 0.8), 0 0 25px rgba(255, 140, 0, 0.6);
+      pointer-events: none;
+      z-index: 10;
+      letter-spacing: 1px;
+      padding: 0 10px;
+    }
+    .subtitle {
+      font-size: 1rem;
+      color: #ffb703;
+      margin-top: 5px;
+      font-weight: normal;
+    }
+    .hint {
+      position: absolute;
+      bottom: 20px;
+      width: 100%;
+      text-align: center;
+      color: rgba(255, 255, 255, 0.6);
+      font-size: 0.85rem;
+      pointer-events: none;
+      z-index: 10;
+    }
+  </style>
+  <!-- Library Three.js para renderizado 3D -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+
+  <div class="main-title">
+    ✨ ¡FELIZ DÍA MI MORENA PRECIOSA! 🌻
+    <div class="subtitle">Eres mi universo entero ❤️</div>
+  </div>
+
+  <div id="canvas-container"></div>
+  <div class="hint">👈 Mueve con el dedo o mouse para explorar el universo 3D 👉</div>
+
+  <script>
+    // --- Configuración Básica de Escena Three.js ---
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+    
+    // Cámara
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(0, 25, 45);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    container.appendChild(renderer.domElement);
+
+    // --- 1. Galaxia en Espiral de Estrellas Doradas ---
+    const galaxyParams = {
+      count: 12000,
+      size: 0.18,
+      radius: 35,
+      branches: 4,
+      spin: 1.2,
+      randomness: 0.5,
+      power: 3,
+      insideColor: '#ffd700',
+      outsideColor: '#ff4500'
+    };
+
+    const geometry = new THREE.BufferGeometry();
+    const positions = new Float32Array(galaxyParams.count * 3);
+    const colors = new Float32Array(galaxyParams.count * 3);
+
+    const colorInside = new THREE.Color(galaxyParams.insideColor);
+    const colorOutside = new THREE.Color(galaxyParams.outsideColor);
+
+    for (let i = 0; i < galaxyParams.count; i++) {
+      // Posición
+      const i3 = i * 3;
+      const radius = Math.random() * galaxyParams.radius;
+      const spinAngle = radius * galaxyParams.spin;
+      const branchAngle = ((i % galaxyParams.branches) / galaxyParams.branches) * Math.PI * 2;
+
+      const randomX = Math.pow(Math.random(), galaxyParams.power) * (Math.random() < 0.5 ? 1 : -1) * galaxyParams.randomness * radius;
+      const randomY = Math.pow(Math.random(), galaxyParams.power) * (Math.random() < 0.5 ? 1 : -1) * galaxyParams.randomness * radius;
+      const randomZ = Math.pow(Math.random(), galaxyParams.power) * (Math.random() < 0.5 ? 1 : -1) * galaxyParams.randomness * radius;
+
+      positions[i3] = Math.cos(branchAngle + spinAngle) * radius + randomX;
+      positions[i3 + 1] = randomY;
+      positions[i3 + 2] = Math.sin(branchAngle + spinAngle) * radius + randomZ;
+
+      // Color
+      const mixedColor = colorInside.clone();
+      mixedColor.lerp(colorOutside, radius / galaxyParams.radius);
+      
+      colors[i3] = mixedColor.r;
+      colors[i3 + 1] = mixedColor.g;
+      colors[i3 + 2] = mixedColor.b;
+    }
+
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+    // Textura brillante para las estrellas
+    const particleTexture = createParticleTexture();
+    const material = new THREE.PointsMaterial({
+      size: galaxyParams.size,
+      sizeAttenuation: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      vertexColors: true,
+      map: particleTexture,
+      transparent: true
+    });
+
+    const galaxy = new THREE.Points(geometry, material);
+    scene.add(galaxy);
+
+    function createParticleTexture() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 32;
+      canvas.height = 32;
+      const ctx = canvas.getContext('2d');
+      const gradient = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
+      gradient.addColorStop(0, 'rgba(255,255,255,1)');
+      gradient.addColorStop(0.5, 'rgba(255,220,100,0.8)');
+      gradient.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, 32, 32);
+
+      const texture = new THREE.Texture(canvas);
+      texture.needsUpdate = true;
+      return texture;
+    }
+
+    // --- 2. Corazón de Estrellas Doradas Flotante ---
+    const heartGeometry = new THREE.BufferGeometry();
+    const heartCount = 2000;
+    const heartPos = new Float32Array(heartCount * 3);
+
+    for (let i = 0; i < heartCount; i++) {
+      const t = Math.PI * 2 * Math.random();
+      const u = Math.PI * (Math.random() - 0.5);
+      
+      // Ecuación paramétrica de corazón 3D
+      let x = 16 * Math.pow(Math.sin(t), 3);
+      let y = 13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t);
+      let z = (Math.random() - 0.5) * 6;
+
+      const scale = 0.5;
+      heartPos[i * 3] = x * scale;
+      heartPos[i * 3 + 1] = y * scale + 15; // Flotando sobre el centro
+      heartPos[i * 3 + 2] = z * scale;
+    }
+
+    heartGeometry.setAttribute('position', new THREE.BufferAttribute(heartPos, 3));
+    const heartMaterial = new THREE.PointsMaterial({
+      size: 0.35,
+      color: 0xffea00,
+      blending: THREE.AdditiveBlending,
+      map: particleTexture,
+      transparent: true
+    });
+    const heartGroup = new THREE.Points(heartGeometry, heartMaterial);
+    scene.add(heartGroup);
+
+    // --- 3. Textos y Carteles Orbitando en la Galaxia ---
+    const phrases = [
+      "✨ DÍA FELIZ MI MORENA PRECIOSA 🌻",
+      "💛 NUESTRO UNIVERSO 💛",
+      "🌻 TE ELIJO SIEMPRE ✨",
+      "✨ LUZ DE MI VIDA 💛",
+      "💛 MI PERSONA FAVORITA 🌻",
+      "🌻 MI LUGAR SEGURO ✨",
+      "✨ ERES MI SUEÑO HECHO REALIDAD 💛"
+    ];
+
+    const labelGroup = new THREE.Group();
+    scene.add(labelGroup);
+
+    phrases.forEach((text, index) => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 128;
+      const ctx = canvas.getContext('2d');
+      
+      // Fondo brillante para el cartel
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+      ctx.strokeStyle = '#ffd700';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.roundRect(10, 10, 492, 108, 20);
+      ctx.fill();
+      ctx.stroke();
+
+      // Texto brillante
+      ctx.font = 'Bold 24px Arial';
+      ctx.fillStyle = '#ffea00';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.shadowColor = '#ff8c00';
+      ctx.shadowBlur = 10;
+      ctx.fillText(text, 256, 64);
+
+      const texture = new THREE.CanvasTexture(canvas);
+      const spriteMaterial = new THREE.SpriteMaterial({ map: texture, transparent: true });
+      const sprite = new THREE.Sprite(spriteMaterial);
+
+      const angle = (index / phrases.length) * Math.PI * 2;
+      const radius = 18 + Math.random() * 6;
+      sprite.position.x = Math.cos(angle) * radius;
+      sprite.position.z = Math.sin(angle) * radius;
+      sprite.position.y = (Math.random() - 0.5) * 4 + 2;
+
+      sprite.scale.set(10, 2.5, 1);
+      labelGroup.add(sprite);
+    });
+
+    // --- 4. Control de Movimiento/Arrastre del Usuario ---
+    let isDragging = false;
+    let previousMousePosition = { x: 0, y: 0 };
+    let targetRotationX = 0.4;
+    let targetRotationY = 0;
+
+    function onPointerDown(e) {
+      isDragging = true;
+      const x = e.touches ? e.touches[0].clientX : e.clientX;
+      const y = e.touches ? e.touches[0].clientY : e.clientY;
+      previousMousePosition = { x, y };
+    }
+
+    function onPointerMove(e) {
+      if (!isDragging) return;
+      const x = e.touches ? e.touches[0].clientX : e.clientX;
+      const y = e.touches ? e.touches[0].clientY : e.clientY;
+
+      const deltaX = x - previousMousePosition.x;
+      const deltaY = y - previousMousePosition.y;
+
+      targetRotationY += deltaX * 0.005;
+      targetRotationX += deltaY * 0.005;
+
+      // Limitar rotación vertical
+      targetRotationX = Math.max(0.1, Math.min(Math.PI / 2.2, targetRotationX));
+
+      previousMousePosition = { x, y };
+    }
+
+    function onPointerUp() {
+      isDragging = false;
+    }
+
+    window.addEventListener('mousedown', onPointerDown);
+    window.addEventListener('mousemove', onPointerMove);
+    window.addEventListener('mouseup', onPointerUp);
+    window.addEventListener('touchstart', onPointerDown);
+    window.addEventListener('touchmove', onPointerMove);
+    window.addEventListener('touchend', onPointerUp);
+
+    // Redimensionar pantalla
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // --- 5. Bucle de Animación ---
+    const clock = new THREE.Clock();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const elapsedTime = clock.getElapsedTime();
+
+      // Rotación automática suave de la galaxia
+      galaxy.rotation.y = elapsedTime * 0.05;
+      labelGroup.rotation.y = elapsedTime * 0.05;
+
+      // Animación de palpitación del corazón
+      const pulse = 1 + Math.sin(elapsedTime * 3) * 0.08;
+      heartGroup.scale.set(pulse, pulse, pulse);
+      heartGroup.rotation.y = elapsedTime * 0.1;
+
+      // Smooth Orbit Camera basada en la rotación del usuario
+      const radius = 50;
+      camera.position.x = radius * Math.sin(targetRotationY) * Math.cos(targetRotationX);
+      camera.position.z = radius * Math.cos(targetRotationY) * Math.cos(targetRotationX);
+      camera.position.y = radius * Math.sin(targetRotationX);
+      camera.lookAt(0, 5, 0);
+
+      renderer.render(scene, camera);
+    }
+
+    animate();
+  </script>
+</body>
+</html>
